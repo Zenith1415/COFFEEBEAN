@@ -16,5 +16,5 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: pip install dvc
-      - run: dvc init
+      - run: dvc init -f
       - run: pytest tests/
