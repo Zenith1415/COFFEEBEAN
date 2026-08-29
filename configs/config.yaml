@@ -1,0 +1,18 @@
+project:
+  name: COFFEEBEAN
+  problem_statement: SIH26052
+
+audio:
+  sample_rate: 16000
+  channels: 1
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+
+evaluation:
+  metrics:
+    - snr
+    - stoi
+    - pesq

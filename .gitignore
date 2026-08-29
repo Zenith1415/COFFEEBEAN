@@ -1,0 +1,43 @@
+# Python cache files
+__pycache__/
+*.py[c]
+*.pyi
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Model files
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Audio files
+*.wav
+*.mp3
+*.flac
+
+# Raw/processed/test datasets
+data/raw/*
+data/processed/*
+data/test/*
+
+# Logs
+logs/
+*.log
+
+# .env files
+.env
+
+# IDE files
+.vscode/
+.idea/
+
+# uv/uvlock
+.uv/
+.uv.lock
