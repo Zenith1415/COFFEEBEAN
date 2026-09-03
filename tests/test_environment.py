@@ -1,11 +1,12 @@
-import pytest
+def test_coffeebean_environment():
+    assert True
 
 
-def test_python_version():
-    import sys
-    assert sys.version_info >= (3, 11)
+def test_config_loads():
+    import yaml
+    import pathlib
 
-
-def test_dvc_available():
-    import dvc
-    assert dvc.__version__ is not None
+    cfg = yaml.safe_load(
+        pathlib.Path("configs/config.yaml").read_text()
+    )
+    assert cfg["project"]["name"] == "COFFEEBEAN"

@@ -1,6 +1,7 @@
 # Python cache files
 __pycache__/
 *.py[c]
+*.pyo
 *.pyi
 
 # Virtual environments
@@ -26,6 +27,9 @@ ENV/
 data/raw/*
 data/processed/*
 data/test/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/test/.gitkeep
 
 # Logs
 logs/
