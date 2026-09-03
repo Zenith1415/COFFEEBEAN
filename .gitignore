@@ -28,6 +28,10 @@ data/raw/*
 data/processed/*
 data/test/*
 !data/raw/.gitkeep
+!data/raw/speech/.gitkeep
+!data/raw/stationary_noise/.gitkeep
+!data/raw/nonstationary_noise/.gitkeep
+!data/raw/impulsive_noise/.gitkeep
 !data/processed/.gitkeep
 !data/test/.gitkeep
 
