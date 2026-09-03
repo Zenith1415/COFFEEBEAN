@@ -1,2 +1,38 @@
-# DVC pipeline stages will be defined here in Phase 4
-stages: {}
+# DVC pipeline — COFFEEBEAN ANC training
+# Run with: dvc repro
+# Each stage is reproducible: same inputs + code = same outputs
+
+stages:
+
+  preprocess:
+    cmd: python src/preprocessing/preprocess.py
+    desc: "Validate and scan raw dataset"
+    deps:
+      - data/raw
+      - src/preprocessing/preprocess.py
+      - configs/config.yaml
+    params:
+      - configs/config.yaml:
+          - audio.sample_rate
+
+  train:
+    cmd: >-
+      python -u src/training/train.py
+    desc: "Train ANC model and log to MLflow"
+    deps:
+      - data/raw
+      - src/training/train.py
+      - src/training/model.py
+      - src/preprocessing/preprocess.py
+      - configs/config.yaml
+    outs:
+      - models/anc_checkpoint.pt
+    metrics:
+      - metrics.json:
+          cache: false
+    params:
+      - configs/config.yaml:
+          - training.batch_size
+          - training.epochs
+          - training.learning_rate
+          - audio.sample_rate

@@ -23,10 +23,12 @@ def test_evaluate_module_importable():
 
 
 def test_preprocess_module_importable():
-    """preprocess.py must be importable without errors."""
+    """preprocess.py must be importable and expose core functions."""
     import src.preprocessing.preprocess as pre_module
     assert hasattr(pre_module, "load_dataset")
-    assert hasattr(pre_module, "preprocess_audio")
+    assert hasattr(pre_module, "load_audio")
+    assert hasattr(pre_module, "mix_signals")
+    assert hasattr(pre_module, "ANCDataset")
 
 
 def test_load_config_reads_yaml():

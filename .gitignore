@@ -18,6 +18,9 @@ ENV/
 *.onnx
 *.engine
 
+# DVC outputs
+metrics.json
+
 # Audio files
 *.wav
 *.mp3
