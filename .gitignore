@@ -39,6 +39,10 @@ data/test/*
 logs/
 *.log
 
+# MLflow
+mlflow.db
+mlruns/
+
 # .env files
 .env
 
