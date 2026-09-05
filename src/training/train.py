@@ -69,7 +69,7 @@ def train_one_epoch(
     loss_fn: nn.Module,
     device: torch.device,
 ) -> float:
-    """Run one full training epoch. Returns mean loss."""
+    """Run one full training epoch. Returns mean training loss."""
     model.train()
     total_loss = 0.0
 
@@ -84,6 +84,27 @@ def train_one_epoch(
         optimizer.step()
 
         total_loss += loss.item()
+
+    return total_loss / max(len(loader), 1)
+
+
+def evaluate_loss(
+    model: nn.Module,
+    loader: DataLoader,
+    loss_fn: nn.Module,
+    device: torch.device,
+) -> float:
+    """Evaluate model on validation loader. Returns mean eval loss."""
+    model.eval()
+    total_loss = 0.0
+
+    with torch.no_grad():
+        for noisy, clean in loader:
+            noisy = noisy.to(device)
+            clean = clean.to(device)
+            enhanced = model(noisy)
+            loss = loss_fn(enhanced, clean)
+            total_loss += loss.item()
 
     return total_loss / max(len(loader), 1)
 
@@ -109,19 +130,34 @@ def train():
     total_files = sum(len(v) for v in raw_dataset.values())
     print(f"📦 Total audio files loaded: {total_files}", flush=True)
 
-    torch_dataset = ANCDataset(
+    full_dataset = ANCDataset(
         dataset=raw_dataset,
         chunk_samples=cfg["audio"]["sample_rate"],   # 1 second chunks
         snr_range_db=(-5.0, 20.0),
         num_samples=max(total_files * 10, 100),      # scale with dataset size
     )
 
-    loader = DataLoader(
-        torch_dataset,
+    val_size = max(int(len(full_dataset) * 0.2), 1)
+    train_size = len(full_dataset) - val_size
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        full_dataset, [train_size, val_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+
+    train_loader = DataLoader(
+        train_dataset,
         batch_size=cfg["training"]["batch_size"],
         shuffle=True,
         num_workers=0,        # 0 for Windows compatibility
-        drop_last=True,
+        drop_last=False,
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=cfg["training"]["batch_size"],
+        shuffle=False,
+        num_workers=0,
+        drop_last=False,
     )
 
     # ── Build model ────────────────────────────────────────────────────────
@@ -153,30 +189,38 @@ def train():
             "model_size_mb":    round(model.model_size_mb(), 4),
             "device":           str(device),
             "dataset_files":    total_files,
+            "train_samples":    train_size,
+            "val_samples":      val_size,
             "dataset_version":  "v1",
         })
 
         # ── Training loop ──────────────────────────────────────────────────
         print(f"\n🚀 Starting training for {cfg['training']['epochs']} epochs on {device}...", flush=True)
         print(f"📊 Tracking live at: {MLFLOW_TRACKING_URI}\n", flush=True)
-        best_loss = float("inf")
+        best_train_loss = float("inf")
+        best_val_loss   = float("inf")
 
         for epoch in range(cfg["training"]["epochs"]):
             t0 = time.time()
-            loss = train_one_epoch(model, loader, optimizer, loss_fn, device)
+            train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, device)
+            val_loss   = evaluate_loss(model, val_loader, loss_fn, device)
             elapsed = time.time() - t0
 
-            mlflow.log_metric("train_loss", loss, step=epoch)
-            mlflow.log_metric("epoch_time_s", elapsed, step=epoch)
+            mlflow.log_metric("train_loss", train_loss, step=epoch)
+            mlflow.log_metric("val_loss",   val_loss,   step=epoch)
+            mlflow.log_metric("eval_loss",  val_loss,   step=epoch)
+            mlflow.log_metric("epoch_time_s", elapsed,  step=epoch)
 
             print(
                 f"  Epoch [{epoch+1:2d}/{cfg['training']['epochs']:2d}] "
-                f"-> Train Loss: {loss:.6f} | Time: {elapsed:.2f}s",
+                f"-> Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f} | Time: {elapsed:.2f}s",
                 flush=True,
             )
 
-            if loss < best_loss:
-                best_loss = loss
+            if train_loss < best_train_loss:
+                best_train_loss = train_loss
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
 
         # ── Save model ─────────────────────────────────────────────────────
         checkpoint_path = MODELS_DIR / "anc_checkpoint.pt"
@@ -190,15 +234,11 @@ def train():
 
         # Final metrics
         final_metrics = {
-            "final_train_loss":  best_loss,
+            "final_train_loss":  best_train_loss,
+            "final_val_loss":    best_val_loss,
+            "final_eval_loss":   best_val_loss,
             "model_size_mb":     model.model_size_mb(),
             "total_epochs":      cfg["training"]["epochs"],
-            # Phase 5: replace these with real SNR/STOI/PESQ
-            "snr_before":        None,
-            "snr_after":         None,
-            "snr_improvement":   None,
-            "stoi":              None,
-            "pesq":              None,
         }
 
         for k, v in final_metrics.items():
@@ -207,13 +247,15 @@ def train():
 
         # Write DVC metrics file
         dvc_metrics = {
-            "final_train_loss": best_loss,
+            "final_train_loss": best_train_loss,
+            "final_val_loss":   best_val_loss,
+            "final_eval_loss":  best_val_loss,
             "model_size_mb":    model.model_size_mb(),
         }
         METRICS_FILE.write_text(json.dumps(dvc_metrics, indent=2))
         mlflow.log_artifact(str(METRICS_FILE))
 
-        logger.info(f"Training complete. Best loss: {best_loss:.6f}")
+        logger.info(f"Training complete. Best train loss: {best_train_loss:.6f} | Best val/eval loss: {best_val_loss:.6f}")
         logger.info(f"View run at: {MLFLOW_TRACKING_URI}/#/experiments/1/runs/{run.info.run_id}")
 
     return run.info.run_id

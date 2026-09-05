@@ -105,7 +105,8 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
                 avg[key] = round(float(np.mean(vals)), 4) if vals else None
             snr_name = f"minus_{abs(int(snr))}" if snr < 0 else f"plus_{int(snr)}"
             all_results[f"snr_{snr_name}dB"] = avg
-            logger.info(f"SNR={snr:+.0f}dB -> improvement={avg.get('snr_improvement')} dB | "
+            logger.info(f"SNR={snr:+.0f}dB -> loss={avg.get('eval_loss')} | "
+                        f"improvement={avg.get('snr_improvement')} dB | "
                         f"STOI={avg.get('stoi_enhanced')} | PESQ={avg.get('pesq_enhanced')}")
 
     # Log to MLflow
@@ -121,6 +122,8 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
                     mlflow.log_metric(f"{snr_tag}_{k}", float(v))
 
         # Log overall averages across all SNR levels
+        all_eval_losses  = [r.get("eval_loss") for r in all_results.values()
+                            if r.get("eval_loss") is not None]
         all_improvements = [r.get("snr_improvement") for r in all_results.values()
                             if r.get("snr_improvement") is not None]
         all_stoi = [r.get("stoi_enhanced") for r in all_results.values()
@@ -128,6 +131,8 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
         all_pesq = [r.get("pesq_enhanced") for r in all_results.values()
                     if r.get("pesq_enhanced") is not None]
 
+        if all_eval_losses:
+            mlflow.log_metric("avg_eval_loss", round(float(np.mean(all_eval_losses)), 6))
         if all_improvements:
             mlflow.log_metric("avg_snr_improvement", round(np.mean(all_improvements), 4))
         if all_stoi:

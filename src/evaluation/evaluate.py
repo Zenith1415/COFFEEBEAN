@@ -125,6 +125,10 @@ def evaluate_anc_model(
 
     metrics = {}
 
+    # Evaluation Loss (MSE between enhanced audio and clean target)
+    mse_loss = torch.nn.functional.mse_loss(enhanced.squeeze(), clean.squeeze()).item()
+    metrics["eval_loss"] = round(float(mse_loss), 6)
+
     # SNR
     metrics.update(compute_snr_improvement(clean_np, noisy_np, enhanced_np))
 
