@@ -52,34 +52,44 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Normalize username to lowercase and log in
       - name: Log in to Docker Hub
         if: github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # Strip leading/trailing whitespace or newlines
+          CLEAN_USER=$(echo "$DOCKER_USER" | tr -d '[:space:]')
+          CLEAN_TOKEN=$(echo "$DOCKER_TOKEN" | tr -d '[:space:]')
+          LOWER_USER=$(echo "$CLEAN_USER" | tr '[:upper:]' '[:lower:]')
+          
+          echo "$CLEAN_TOKEN" | docker login -u "$CLEAN_USER" --password-stdin
+          echo "DOCKER_REPO_OWNER=$LOWER_USER" >> $GITHUB_ENV
 
       # ── Build & Push Main Image ──
       - name: Build and push Main Docker image
+        if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/coffeebean:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/coffeebean:${{ github.sha }}
+            ${{ env.DOCKER_REPO_OWNER }}/coffeebean:latest
+            ${{ env.DOCKER_REPO_OWNER }}/coffeebean:${{ github.sha }}
 
       # ── Build & Push Edge Image ──
       - name: Build and push Edge Docker image
+        if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile.edge
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/coffeebean-edge:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/coffeebean-edge:${{ github.sha }}
+            ${{ env.DOCKER_REPO_OWNER }}/coffeebean-edge:latest
+            ${{ env.DOCKER_REPO_OWNER }}/coffeebean-edge:${{ github.sha }}
 
   # ── Job 3: Model Validation (on main only) ────────────────────────────────
   validate-model:
