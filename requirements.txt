@@ -7,3 +7,10 @@ boto3
 numpy
 torch
 torchaudio
+torchmetrics
+pystoi
+onnx
+onnxruntime
+onnxscript
+papermill
+nbformat

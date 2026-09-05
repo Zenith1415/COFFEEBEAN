@@ -50,15 +50,16 @@ def test_mlflow_tracking_uri_env(monkeypatch):
     assert train_module.MLFLOW_TRACKING_URI == "http://custom-host:5000"
 
 
-def test_evaluation_stubs_raise_not_implemented():
-    """Evaluation stubs must raise NotImplementedError (not silently pass)."""
+def test_evaluation_functions_exist():
+    """Evaluation module must expose real compute functions (not stubs)."""
     from src.evaluation.evaluate import compute_snr, compute_stoi, compute_pesq
-    with pytest.raises(NotImplementedError):
-        compute_snr(None, None)
-    with pytest.raises(NotImplementedError):
-        compute_stoi(None, None, 16000)
-    with pytest.raises(NotImplementedError):
-        compute_pesq(None, None, 16000)
+    import numpy as np
+    # SNR should work on real numpy arrays
+    clean = np.random.randn(16000)
+    noisy = clean + np.random.randn(16000) * 0.1
+    snr = compute_snr(clean, noisy)
+    assert isinstance(snr, float)
+    assert snr > 0
 
 
 def test_dataset_directories_exist():

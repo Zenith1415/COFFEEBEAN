@@ -1,0 +1,90 @@
+name: COFFEEBEAN CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  PYTHONUTF8: "1"
+
+jobs:
+  # ── Job 1: Tests ──────────────────────────────────────────────────────────
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install torchmetrics pystoi onnx onnxruntime
+
+      - name: Run all tests
+        run: pytest tests/ -v --tb=short --junitxml=test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+
+  # ── Job 2: Docker build ───────────────────────────────────────────────────
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t coffeebean:${{ github.sha }} .
+
+      - name: Build edge Docker image
+        run: docker build -f docker/Dockerfile.edge -t coffeebean-edge:${{ github.sha }} .
+
+  # ── Job 3: Model Validation (on main only) ────────────────────────────────
+  validate-model:
+    name: Validate Model Artifact
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt onnx onnxruntime
+
+      - name: Check ONNX model exists
+        # ⚠️ ACCOUNT REQUIRED: DVC pull needs DagsHub/Google Drive credentials
+        # Skipping dvc pull for now — check artifact exists if already present
+        run: |
+          if [ -f "models/anc_model.onnx" ]; then
+            python -c "
+          import onnx
+          m = onnx.load('models/anc_model.onnx')
+          onnx.checker.check_model(m)
+          print('ONNX model valid')
+          "
+          else
+            echo "No ONNX model found — skipping validation (run export.py first)"
+          fi

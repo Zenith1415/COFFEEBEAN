@@ -16,3 +16,15 @@ evaluation:
     - snr
     - stoi
     - pesq
+
+quality_gate:
+  min_snr_improvement: 3.0
+  min_avg_stoi: 0.65
+  min_avg_pesq: 2.0
+  max_model_size_mb: 50.0
+  max_final_train_loss: 0.1
+
+monitoring:
+  log_dir: logs/edge
+  metrics_window: 100
+  flush_interval_chunks: 50

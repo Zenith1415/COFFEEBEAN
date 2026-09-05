@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+# Edge-optimized COFFEEBEAN inference image
+# Stripped down: no training deps, only ONNX Runtime + audio I/O
+
+WORKDIR /app
+
+# System deps for audio
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps (inference only)
+COPY requirements-edge.txt .
+RUN pip install --no-cache-dir -r requirements-edge.txt
+
+# Copy source
+COPY src/deployment/inference.py  src/deployment/inference.py
+COPY src/monitoring/               src/monitoring/
+COPY configs/config.yaml           configs/config.yaml
+
+# Model (mounted at runtime or baked in for offline deployment)
+# COPY models/anc_model.onnx       models/anc_model.onnx
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONUTF8=1
+ENV COFFEEBEAN_LOG_DIR=/app/logs/edge
+
+EXPOSE 8080
+
+ENTRYPOINT ["python", "src/deployment/inference.py"]
+CMD ["--model", "models/anc_model.onnx"]
