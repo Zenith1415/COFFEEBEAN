@@ -23,11 +23,19 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from src.training.model import ANCAudioModel
+from src.training.model import get_model, ANCAudioModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# Auto-load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "https://dagshub.com/Zenith1415/COFFEEBEAN.mlflow")
 CONFIG_PATH = Path("configs/config.yaml")
 MODELS_DIR  = Path("models")
 
@@ -70,6 +78,7 @@ def export_to_onnx(
         export_params=True,
         opset_version=opset_version,
         do_constant_folding=True,
+        dynamo=False,
         input_names=["noisy_audio"],
         output_names=["enhanced_audio"],
         dynamic_axes={
@@ -206,7 +215,7 @@ def main():
     MODELS_DIR.mkdir(exist_ok=True)
 
     # Load model
-    model = ANCAudioModel(cfg)
+    model = get_model(cfg)
     model.load_state_dict(torch.load(args.checkpoint, map_location="cpu"))
     model.eval()
     logger.info(f"Loaded checkpoint: {args.checkpoint}")
@@ -232,7 +241,7 @@ def main():
 
     # Save results
     results_path = MODELS_DIR / "export_results.json"
-    results_path.write_text(json.dumps(results, indent=2))
+    results_path.write_text(json.dumps(results, indent=2, default=str))
     logger.info(f"Results saved: {results_path}")
 
     # Log to MLflow
@@ -251,7 +260,7 @@ def main():
                     "size_reduction_pct":   results["quantization"]["size_reduction_pct"],
                 })
 
-    print(json.dumps(results, indent=2))
+    print(json.dumps(results, indent=2, default=str))
     return results
 
 

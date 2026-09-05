@@ -23,12 +23,19 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.training.model import ANCAudioModel
+from src.training.model import get_model, ANCAudioModel
 from src.preprocessing.preprocess import load_dataset, ANCDataset, mix_signals
 from src.evaluation.evaluate import evaluate_anc_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+# Auto-load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "https://dagshub.com/Zenith1415/COFFEEBEAN.mlflow")
 CONFIG_PATH = Path("configs/config.yaml")
@@ -53,7 +60,7 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load model
-    model = ANCAudioModel(cfg).to(device)
+    model = get_model(cfg).to(device)
     ckpt_path = Path(checkpoint)
     if not ckpt_path.exists():
         logger.error(f"Checkpoint not found: {ckpt_path}")
@@ -96,7 +103,8 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
             for key in batch_metrics[0]:
                 vals = [m[key] for m in batch_metrics if m[key] is not None]
                 avg[key] = round(float(np.mean(vals)), 4) if vals else None
-            all_results[f"snr_{int(snr):+d}dB"] = avg
+            snr_name = f"minus_{abs(int(snr))}" if snr < 0 else f"plus_{int(snr)}"
+            all_results[f"snr_{snr_name}dB"] = avg
             logger.info(f"SNR={snr:+.0f}dB -> improvement={avg.get('snr_improvement')} dB | "
                         f"STOI={avg.get('stoi_enhanced')} | PESQ={avg.get('pesq_enhanced')}")
 
@@ -110,7 +118,7 @@ def run_evaluation(checkpoint: str, run_id: str, snr_levels: list, num_pairs: in
         for snr_tag, metrics in all_results.items():
             for k, v in metrics.items():
                 if v is not None:
-                    mlflow.log_metric(f"{snr_tag}/{k}", v)
+                    mlflow.log_metric(f"{snr_tag}_{k}", float(v))
 
         # Log overall averages across all SNR levels
         all_improvements = [r.get("snr_improvement") for r in all_results.values()

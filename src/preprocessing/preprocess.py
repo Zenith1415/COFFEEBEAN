@@ -23,17 +23,22 @@ def load_audio(
     normalize: bool = True,
 ) -> torch.Tensor:
     """
-    Load a WAV file, resample to target_sr, convert to mono, and normalize.
+    Load a WAV file, resample to target_sr, convert to mono, normalize.
 
     Args:
-        file_path:  Path to the .wav file.
-        target_sr:  Target sample rate in Hz.
-        normalize:  If True, peak-normalize the waveform to [-1, 1].
+        file_path: Path to .wav file.
+        target_sr: Target sample rate in Hz.
+        normalize: If True, peak-normalizes to [-1.0, 1.0].
 
     Returns:
-        Waveform tensor of shape [1, samples].
+        Tensor of shape [1, samples] (float32).
     """
-    waveform, sr = torchaudio.load(str(file_path))
+    try:
+        import soundfile as sf
+        samples, sr = sf.read(str(file_path), dtype="float32", always_2d=True)
+        waveform = torch.from_numpy(samples.T)  # [channels, samples]
+    except Exception:
+        waveform, sr = torchaudio.load(str(file_path))
 
     # Resample if needed
     if sr != target_sr:

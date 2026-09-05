@@ -1,0 +1,34 @@
+{
+  "export": {
+    "path": "models/anc_model.onnx",
+    "size_mb": 0.6913,
+    "opset_version": 17,
+    "input_shape": [
+      1,
+      1,
+      16000
+    ]
+  },
+  "quantization": {
+    "original_size_mb": 0.6913,
+    "quantized_size_mb": 0.6894,
+    "size_reduction_pct": 0.28,
+    "quantized_path": "models/anc_model_int8.onnx"
+  },
+  "benchmark_fp32": {
+    "latency_mean_ms": 38.24,
+    "latency_p50_ms": 37.09,
+    "latency_p95_ms": 44.08,
+    "latency_p99_ms": 48.09,
+    "real_time_factor": 0.0382,
+    "real_time_capable": "True"
+  },
+  "benchmark_int8": {
+    "latency_mean_ms": 38.77,
+    "latency_p50_ms": 37.35,
+    "latency_p95_ms": 48.33,
+    "latency_p99_ms": 56.61,
+    "real_time_factor": 0.0388,
+    "real_time_capable": "True"
+  }
+}

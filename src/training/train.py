@@ -93,18 +93,21 @@ def train():
     Main training function.
     Reads config → loads DVC dataset → trains model → logs to MLflow.
     """
+    print("=" * 60, flush=True)
+    print("  COFFEEBEAN ANC Model Training Pipeline", flush=True)
+    print("=" * 60, flush=True)
     cfg = load_config()
     MODELS_DIR.mkdir(exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Device: {device}")
+    print(f"🖥️  Compute Device: {device}", flush=True)
 
     # ── Load dataset from DVC-tracked data/raw/ ────────────────────────────
-    logger.info("Loading dataset from data/raw/ ...")
+    print("📂 Loading dataset from data/raw/ ...", flush=True)
     raw_dataset = load_dataset("data/raw", target_sr=cfg["audio"]["sample_rate"])
 
     total_files = sum(len(v) for v in raw_dataset.values())
-    logger.info(f"Total audio files loaded: {total_files}")
+    print(f"📦 Total audio files loaded: {total_files}", flush=True)
 
     torch_dataset = ANCDataset(
         dataset=raw_dataset,
@@ -154,7 +157,8 @@ def train():
         })
 
         # ── Training loop ──────────────────────────────────────────────────
-        logger.info(f"Starting training for {cfg['training']['epochs']} epochs ...")
+        print(f"\n🚀 Starting training for {cfg['training']['epochs']} epochs on {device}...", flush=True)
+        print(f"📊 Tracking live at: {MLFLOW_TRACKING_URI}\n", flush=True)
         best_loss = float("inf")
 
         for epoch in range(cfg["training"]["epochs"]):
@@ -165,11 +169,11 @@ def train():
             mlflow.log_metric("train_loss", loss, step=epoch)
             mlflow.log_metric("epoch_time_s", elapsed, step=epoch)
 
-            if (epoch + 1) % 10 == 0 or epoch == 0:
-                logger.info(
-                    f"Epoch {epoch+1:3d}/{cfg['training']['epochs']} "
-                    f"| loss={loss:.6f} | time={elapsed:.2f}s"
-                )
+            print(
+                f"  Epoch [{epoch+1:2d}/{cfg['training']['epochs']:2d}] "
+                f"-> Train Loss: {loss:.6f} | Time: {elapsed:.2f}s",
+                flush=True,
+            )
 
             if loss < best_loss:
                 best_loss = loss
