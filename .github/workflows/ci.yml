@@ -29,7 +29,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install torchmetrics pystoi onnx onnxruntime
 
       - name: Run all tests
         run: pytest tests/ -v --tb=short --junitxml=test-results.xml
@@ -50,8 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t coffeebean:${{ github.sha }} .
+      - name: Build main Docker image
+        run: docker build -f docker/Dockerfile -t coffeebean:${{ github.sha }} .
 
       - name: Build edge Docker image
         run: docker build -f docker/Dockerfile.edge -t coffeebean-edge:${{ github.sha }} .
@@ -72,11 +71,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
-        run: pip install -r requirements.txt onnx onnxruntime
+        run: pip install -r requirements.txt
 
-      - name: Check ONNX model exists
-        # ⚠️ ACCOUNT REQUIRED: DVC pull needs DagsHub/Google Drive credentials
-        # Skipping dvc pull for now — check artifact exists if already present
+      - name: Check ONNX model if present
         run: |
           if [ -f "models/anc_model.onnx" ]; then
             python -c "
@@ -86,5 +83,5 @@ jobs:
           print('ONNX model valid')
           "
           else
-            echo "No ONNX model found — skipping validation (run export.py first)"
+            echo "No ONNX model found in repo — skipping validation"
           fi
