@@ -169,12 +169,21 @@ if __name__ == "__main__":
 
     if args.input_wav:
         try:
-            import torchaudio
-            waveform, sr = torchaudio.load(args.input_wav)
-            audio = waveform.squeeze().numpy()
+            import soundfile as sf
+            audio, sr = sf.read(args.input_wav, dtype="float32")
+            if audio.ndim > 1:
+                audio = audio.mean(axis=1)  # convert to mono
             enhanced = engine.enhance(audio)
-            import torch
-            torchaudio.save(args.output_wav, torch.tensor(enhanced).unsqueeze(0), sr)
+            sf.write(args.output_wav, enhanced, sr)
             print(f"Enhanced audio saved: {args.output_wav}")
-        except ImportError:
-            logger.error("torchaudio required for WAV processing")
+        except Exception as e:
+            try:
+                import torchaudio
+                waveform, sr = torchaudio.load(args.input_wav)
+                audio = waveform.squeeze().numpy()
+                enhanced = engine.enhance(audio)
+                import torch
+                torchaudio.save(args.output_wav, torch.tensor(enhanced).unsqueeze(0), sr)
+                print(f"Enhanced audio saved: {args.output_wav}")
+            except Exception as e2:
+                logger.error(f"Failed to process WAV: {e} / {e2}")
