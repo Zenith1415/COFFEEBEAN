@@ -36,7 +36,7 @@ from torch.utils.data import DataLoader
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.preprocessing.preprocess import load_dataset, ANCDataset
-from src.training.model import ANCAudioModel
+from src.training.model import get_model, ANCAudioModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -122,8 +122,8 @@ def train():
     )
 
     # ── Build model ────────────────────────────────────────────────────────
-    model = ANCAudioModel(cfg).to(device)
-    logger.info(f"Model parameters: {model.count_parameters():,}")
+    model = get_model(cfg).to(device)
+    logger.info(f"Model ({cfg.get('model', {}).get('type', 'default')}): {model.count_parameters():,} parameters")
     logger.info(f"Model size: {model.model_size_mb():.2f} MB")
 
     optimizer = torch.optim.Adam(

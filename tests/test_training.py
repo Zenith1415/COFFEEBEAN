@@ -60,6 +60,25 @@ def test_model_size_mb(cfg):
     assert model.model_size_mb() > 0.0
 
 
+def test_rnnoise_model_forward_pass(cfg):
+    """RNNoise model must accept [B, 1, T] and return same shape."""
+    from src.training.model import RNNoiseAudioModel
+    model = RNNoiseAudioModel(cfg)
+    model.eval()
+    x = torch.randn(2, 1, 16000)
+    with torch.no_grad():
+        y = model(x)
+    assert y.shape == x.shape, f"Expected {x.shape}, got {y.shape}"
+
+
+def test_get_model_factory(cfg):
+    from src.training.model import get_model, ANCAudioModel, RNNoiseAudioModel
+    m1 = get_model({**cfg, "model": {"type": "conv_enc_dec"}})
+    assert isinstance(m1, ANCAudioModel)
+    m2 = get_model({**cfg, "model": {"type": "rnnoise"}})
+    assert isinstance(m2, RNNoiseAudioModel)
+
+
 # ── Preprocessing tests ────────────────────────────────────────────────────────
 
 def test_mix_signals_output_shape():

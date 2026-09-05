@@ -2,6 +2,10 @@ project:
   name: COFFEEBEAN
   problem_statement: SIH26052
 
+model:
+  type: rnnoise   # Options: 'rnnoise' (GRU-based edge noise suppression) or 'conv_enc_dec' (waveform CNN)
+  hidden_size: 128
+
 audio:
   sample_rate: 16000
   channels: 1

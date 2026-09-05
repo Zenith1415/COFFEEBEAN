@@ -38,8 +38,9 @@ data/test/*
 !data/processed/.gitkeep
 !data/test/.gitkeep
 
-# Logs
+# Logs & Runs
 logs/
+runs/
 *.log
 
 # MLflow
