@@ -21,7 +21,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "https://dagshub.com/Zenith1415/COFFEEBEAN.mlflow")
 
 # ── Default thresholds (team sets these based on experiments + hardware) ────────
 # These are NOT official DRDO/SIH thresholds — set by team after experimentation.

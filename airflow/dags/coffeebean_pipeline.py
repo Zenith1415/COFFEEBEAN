@@ -1,23 +1,15 @@
 """
 COFFEEBEAN Airflow DAG — Full MLOps Pipeline
-Phase 5: Orchestrates DVC pull → preprocess → train → evaluate → quality gate
-
-⚠️  ACCOUNT REQUIRED: Apache Airflow must be initialized before running.
-    See airflow/README.md for setup instructions.
+Orchestrates DVC pull → preprocess → train → evaluate → quality gate
 
 Usage (after airflow init):
     airflow dags trigger coffeebean_anc_pipeline
 
 Environment variables needed:
-    MLFLOW_TRACKING_URI       = http://localhost:5000
-    MLFLOW_S3_ENDPOINT_URL    = http://localhost:9000
-    AWS_ACCESS_KEY_ID         = minioadmin
-    AWS_SECRET_ACCESS_KEY     = minioadmin
+    MLFLOW_TRACKING_URI       = https://dagshub.com/Zenith1415/COFFEEBEAN.mlflow
+    MLFLOW_TRACKING_USERNAME  = Zenith1415
+    MLFLOW_TRACKING_PASSWORD  = <your_dagshub_token>
     PYTHONUTF8                = 1
-
-    # DagsHub (set when account is ready):
-    # MLFLOW_TRACKING_URI     = https://dagshub.com/<user>/COFFEEBEAN.mlflow
-    # DAGSHUB_TOKEN           = <your_token>
 """
 
 from __future__ import annotations

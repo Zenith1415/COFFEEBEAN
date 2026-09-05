@@ -1,5 +1,7 @@
 [core]
-    remote = minio
+    remote = dagshub
 ['remote "minio"']
     url = s3://coffeebean-dvc
     endpointurl = http://localhost:9000
+['remote "dagshub"']
+    url = https://dagshub.com/Zenith1415/COFFEEBEAN.dvc

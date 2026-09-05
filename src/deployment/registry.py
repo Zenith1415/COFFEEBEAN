@@ -14,7 +14,7 @@ from mlflow.tracking import MlflowClient
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = "COFFEEBEAN_ANC"
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "https://dagshub.com/Zenith1415/COFFEEBEAN.mlflow")
 
 
 def get_client() -> MlflowClient:
